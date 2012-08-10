@@ -40,7 +40,6 @@ func (f *nullWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-
 type Logger struct {
 	logLevel int
 	loggers  []*log.Logger
