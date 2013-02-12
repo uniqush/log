@@ -15,8 +15,7 @@
  *
  */
 
-// There is already a log package in golang.
-package uniqushlog
+package log
 
 import (
 	"io"
