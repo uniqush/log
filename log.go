@@ -39,66 +39,83 @@ func (f *nullWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-type Logger struct {
+type Logger interface {
+	Debug(v ...interface{})
+	Debugf(format string, v ...interface{})
+	Info(v ...interface{})
+	Infof(format string, v ...interface{})
+	Config(v ...interface{})
+	Configf(format string, v ...interface{})
+	Warn(v ...interface{})
+	Warnf(format string, v ...interface{})
+	Error(v ...interface{})
+	Errorf(format string, v ...interface{})
+	Alert(v ...interface{})
+	Alertf(format string, v ...interface{})
+	Fatal(v ...interface{})
+	Fatalf(format string, v ...interface{})
+}
+
+type logger struct {
 	logLevel int
 	loggers  []*log.Logger
 	prefix   string
 	writer   io.Writer
 }
 
-func (l *Logger) Debug(v ...interface{}) {
+func (l *logger) Debug(v ...interface{}) {
 	l.loggers[LOGLEVEL_DEBUG].Print(v...)
 }
 
-func (l *Logger) Debugf(format string, v ...interface{}) {
+func (l *logger) Debugf(format string, v ...interface{}) {
 	l.loggers[LOGLEVEL_DEBUG].Printf(format, v...)
 }
 
-func (l *Logger) Info(v ...interface{}) {
+func (l *logger) Info(v ...interface{}) {
 	l.loggers[LOGLEVEL_INFO].Print(v...)
 }
 
-func (l *Logger) Infof(format string, v ...interface{}) {
+func (l *logger) Infof(format string, v ...interface{}) {
 	l.loggers[LOGLEVEL_INFO].Printf(format, v...)
 }
 
-func (l *Logger) Config(v ...interface{}) {
+func (l *logger) Config(v ...interface{}) {
 	l.loggers[LOGLEVEL_CONFIG].Print(v...)
 }
 
-func (l *Logger) Configf(format string, v ...interface{}) {
+func (l *logger) Configf(format string, v ...interface{}) {
 	l.loggers[LOGLEVEL_CONFIG].Printf(format, v...)
 }
 
-func (l *Logger) Warn(v ...interface{}) {
+func (l *logger) Warn(v ...interface{}) {
 	l.loggers[LOGLEVEL_WARN].Print(v...)
 }
 
-func (l *Logger) Warnf(format string, v ...interface{}) {
+func (l *logger) Warnf(format string, v ...interface{}) {
 	l.loggers[LOGLEVEL_WARN].Printf(format, v...)
 }
 
-func (l *Logger) Error(v ...interface{}) {
+func (l *logger) Error(v ...interface{}) {
 	l.loggers[LOGLEVEL_ERROR].Print(v...)
 }
 
-func (l *Logger) Errorf(format string, v ...interface{}) {
+func (l *logger) Errorf(format string, v ...interface{}) {
 	l.loggers[LOGLEVEL_ERROR].Printf(format, v...)
 }
 
-func (l *Logger) Alert(v ...interface{}) {
+func (l *logger) Alert(v ...interface{}) {
 	l.loggers[LOGLEVEL_ALERT].Print(v...)
 }
 
-func (l *Logger) Alertf(format string, v ...interface{}) {
+func (l *logger) Alertf(format string, v ...interface{}) {
 	l.loggers[LOGLEVEL_ALERT].Printf(format, v...)
 }
 
-func (l *Logger) Fatal(v ...interface{}) {
+func (l *logger) Fatal(v ...interface{}) {
 	l.loggers[LOGLEVEL_FATAL].Fatal(v...)
 }
 
-func (l *Logger) Fatalf(format string, v ...interface{}) {
+func (l *logger) Fatalf(format string, v ...interface{}) {
 	l.loggers[LOGLEVEL_FATAL].Fatalf(format, v...)
 }
 
@@ -115,8 +132,8 @@ func init() {
 	logLevelToName[LOGLEVEL_FATAL] = "[Fatal]"
 }
 
-func NewLogger(writer io.Writer, prefix string, logLevel int) *Logger {
-	ret := new(Logger)
+func NewLogger(writer io.Writer, prefix string, logLevel int) Logger {
+	ret := new(logger)
 	ret.loggers = make([]*log.Logger, NR_LOGLEVELS)
 	if writer == nil {
 		ret.writer = &nullWriter{}
@@ -128,7 +145,7 @@ func NewLogger(writer io.Writer, prefix string, logLevel int) *Logger {
 	return ret
 }
 
-func (l *Logger) SetLogLevel(logLevel int) {
+func (l *logger) SetLogLevel(logLevel int) {
 	if logLevel > LOGLEVEL_DEBUG {
 		logLevel = LOGLEVEL_DEBUG
 	}
@@ -141,3 +158,4 @@ func (l *Logger) SetLogLevel(logLevel int) {
 		l.loggers[i] = log.New(nullwriter, l.prefix+logLevelToName[i]+" ", log.LstdFlags)
 	}
 }
+
