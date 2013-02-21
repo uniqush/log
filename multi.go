@@ -28,7 +28,7 @@ func MultiLogger(loggers ...Logger) Logger {
 func (self *multiLogger) Debug(v ...interface{}) {
 	for _, l := range self.loggers {
 		if l != nil {
-			l.Debug(v)
+			l.Debug(v...)
 		}
 	}
 }
@@ -36,7 +36,7 @@ func (self *multiLogger) Debug(v ...interface{}) {
 func (self *multiLogger) Debugf(format string, v ...interface{}) {
 	for _, l := range self.loggers {
 		if l != nil {
-			l.Debugf(format, v)
+			l.Debugf(format, v...)
 		}
 	}
 }
@@ -44,7 +44,7 @@ func (self *multiLogger) Debugf(format string, v ...interface{}) {
 func (self *multiLogger) Info(v ...interface{}) {
 	for _, l := range self.loggers {
 		if l != nil {
-			l.Info(v)
+			l.Info(v...)
 		}
 	}
 }
@@ -52,7 +52,7 @@ func (self *multiLogger) Info(v ...interface{}) {
 func (self *multiLogger) Infof(format string, v ...interface{}) {
 	for _, l := range self.loggers {
 		if l != nil {
-			l.Infof(format, v)
+			l.Infof(format, v...)
 		}
 	}
 }
@@ -60,7 +60,7 @@ func (self *multiLogger) Infof(format string, v ...interface{}) {
 func (self *multiLogger) Config(v ...interface{}) {
 	for _, l := range self.loggers {
 		if l != nil {
-			l.Config(v)
+			l.Config(v...)
 		}
 	}
 }
@@ -68,7 +68,7 @@ func (self *multiLogger) Config(v ...interface{}) {
 func (self *multiLogger) Configf(format string, v ...interface{}) {
 	for _, l := range self.loggers {
 		if l != nil {
-			l.Configf(format, v)
+			l.Configf(format, v...)
 		}
 	}
 }
@@ -76,7 +76,7 @@ func (self *multiLogger) Configf(format string, v ...interface{}) {
 func (self *multiLogger) Warn(v ...interface{}) {
 	for _, l := range self.loggers {
 		if l != nil {
-			l.Warn(v)
+			l.Warn(v...)
 		}
 	}
 }
@@ -84,7 +84,7 @@ func (self *multiLogger) Warn(v ...interface{}) {
 func (self *multiLogger) Warnf(format string, v ...interface{}) {
 	for _, l := range self.loggers {
 		if l != nil {
-			l.Warnf(format, v)
+			l.Warnf(format, v...)
 		}
 	}
 }
@@ -92,7 +92,7 @@ func (self *multiLogger) Warnf(format string, v ...interface{}) {
 func (self *multiLogger) Error(v ...interface{}) {
 	for _, l := range self.loggers {
 		if l != nil {
-			l.Error(v)
+			l.Error(v...)
 		}
 	}
 }
@@ -100,7 +100,7 @@ func (self *multiLogger) Error(v ...interface{}) {
 func (self *multiLogger) Errorf(format string, v ...interface{}) {
 	for _, l := range self.loggers {
 		if l != nil {
-			l.Errorf(format, v)
+			l.Errorf(format, v...)
 		}
 	}
 }
@@ -108,7 +108,7 @@ func (self *multiLogger) Errorf(format string, v ...interface{}) {
 func (self *multiLogger) Alert(v ...interface{}) {
 	for _, l := range self.loggers {
 		if l != nil {
-			l.Alert(v)
+			l.Alert(v...)
 		}
 	}
 }
@@ -116,7 +116,7 @@ func (self *multiLogger) Alert(v ...interface{}) {
 func (self *multiLogger) Alertf(format string, v ...interface{}) {
 	for _, l := range self.loggers {
 		if l != nil {
-			l.Alertf(format, v)
+			l.Alertf(format, v...)
 		}
 	}
 }
@@ -124,7 +124,7 @@ func (self *multiLogger) Alertf(format string, v ...interface{}) {
 func (self *multiLogger) Fatal(v ...interface{}) {
 	for _, l := range self.loggers {
 		if l != nil {
-			l.Fatal(v)
+			l.Fatal(v...)
 		}
 	}
 }
@@ -132,7 +132,7 @@ func (self *multiLogger) Fatal(v ...interface{}) {
 func (self *multiLogger) Fatalf(format string, v ...interface{}) {
 	for _, l := range self.loggers {
 		if l != nil {
-			l.Fatalf(format, v)
+			l.Fatalf(format, v...)
 		}
 	}
 }

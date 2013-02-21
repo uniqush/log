@@ -23,6 +23,7 @@ import (
 )
 
 const (
+	LOGLEVEL_SILENT = -1
 	LOGLEVEL_FATAL = iota
 	LOGLEVEL_ALERT
 	LOGLEVEL_ERROR
