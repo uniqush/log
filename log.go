@@ -24,7 +24,7 @@ import (
 
 const (
 	LOGLEVEL_SILENT = -1
-	LOGLEVEL_FATAL = iota
+	LOGLEVEL_FATAL  = iota
 	LOGLEVEL_ALERT
 	LOGLEVEL_ERROR
 	LOGLEVEL_WARN
@@ -154,11 +154,10 @@ func (l *logger) SetLogLevel(logLevel int) {
 	}
 	l.logLevel = logLevel
 	for i := 0; i <= logLevel; i++ {
-		l.loggers[i] = log.New(l.writer, l.prefix+logLevelToName[i]+" ", l.Flags)
+		l.loggers[i] = log.New(l.writer, l.prefix+LogLevelToName[i]+" ", l.Flags)
 	}
 	nullwriter := &nullWriter{}
 	for i := logLevel + 1; i < NR_LOGLEVELS; i++ {
-		l.loggers[i] = log.New(nullwriter, l.prefix+logLevelToName[i]+" ", l.Flags)
+		l.loggers[i] = log.New(nullwriter, l.prefix+LogLevelToName[i]+" ", l.Flags)
 	}
 }
-
