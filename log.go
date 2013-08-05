@@ -24,7 +24,7 @@ import (
 
 const (
 	LOGLEVEL_SILENT = -1
-	LOGLEVEL_FATAL = iota
+	LOGLEVEL_FATAL  = iota
 	LOGLEVEL_ALERT
 	LOGLEVEL_ERROR
 	LOGLEVEL_WARN
@@ -62,6 +62,7 @@ type logger struct {
 	loggers  []*log.Logger
 	prefix   string
 	writer   io.Writer
+	Flags    int
 }
 
 func (l *logger) Debug(v ...interface{}) {
@@ -120,21 +121,22 @@ func (l *logger) Fatalf(format string, v ...interface{}) {
 	l.loggers[LOGLEVEL_FATAL].Fatalf(format, v...)
 }
 
-var logLevelToName map[int]string
+var LogLevelToName map[int]string
 
 func init() {
-	logLevelToName = make(map[int]string, NR_LOGLEVELS)
-	logLevelToName[LOGLEVEL_DEBUG] = "[Debug]"
-	logLevelToName[LOGLEVEL_INFO] = "[Info]"
-	logLevelToName[LOGLEVEL_CONFIG] = "[Config]"
-	logLevelToName[LOGLEVEL_WARN] = "[Warning]"
-	logLevelToName[LOGLEVEL_ERROR] = "[Error]"
-	logLevelToName[LOGLEVEL_ALERT] = "[Alert]"
-	logLevelToName[LOGLEVEL_FATAL] = "[Fatal]"
+	LogLevelToName = make(map[int]string, NR_LOGLEVELS)
+	LogLevelToName[LOGLEVEL_DEBUG] = "[Debug]"
+	LogLevelToName[LOGLEVEL_INFO] = "[Info]"
+	LogLevelToName[LOGLEVEL_CONFIG] = "[Config]"
+	LogLevelToName[LOGLEVEL_WARN] = "[Warning]"
+	LogLevelToName[LOGLEVEL_ERROR] = "[Error]"
+	LogLevelToName[LOGLEVEL_ALERT] = "[Alert]"
+	LogLevelToName[LOGLEVEL_FATAL] = "[Fatal]"
 }
 
 func NewLogger(writer io.Writer, prefix string, logLevel int) Logger {
 	ret := new(logger)
+	ret.Flags = log.LstdFlags
 	ret.loggers = make([]*log.Logger, NR_LOGLEVELS)
 	if writer == nil {
 		ret.writer = &nullWriter{}
@@ -152,11 +154,10 @@ func (l *logger) SetLogLevel(logLevel int) {
 	}
 	l.logLevel = logLevel
 	for i := 0; i <= logLevel; i++ {
-		l.loggers[i] = log.New(l.writer, l.prefix+logLevelToName[i]+" ", log.LstdFlags)
+		l.loggers[i] = log.New(l.writer, l.prefix+LogLevelToName[i]+" ", l.Flags)
 	}
 	nullwriter := &nullWriter{}
 	for i := logLevel + 1; i < NR_LOGLEVELS; i++ {
-		l.loggers[i] = log.New(nullwriter, l.prefix+logLevelToName[i]+" ", log.LstdFlags)
+		l.loggers[i] = log.New(nullwriter, l.prefix+LogLevelToName[i]+" ", l.Flags)
 	}
 }
-
