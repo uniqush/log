@@ -62,7 +62,8 @@ type logger struct {
 	loggers  []*log.Logger
 	prefix   string
 	writer   io.Writer
-	Flags    int
+	// append Flags field for setting log flag. by https://github.com/achun
+	Flags int
 }
 
 func (l *logger) Debug(v ...interface{}) {
@@ -121,6 +122,8 @@ func (l *logger) Fatalf(format string, v ...interface{}) {
 	l.loggers[LOGLEVEL_FATAL].Fatalf(format, v...)
 }
 
+// change logLevelToName to LogLevelToName by https://github.com/achun
+// for setting name of log level
 var LogLevelToName map[int]string
 
 func init() {
@@ -136,6 +139,7 @@ func init() {
 
 func NewLogger(writer io.Writer, prefix string, logLevel int) Logger {
 	ret := new(logger)
+	// defaults to log.LstdFlags. by https://github.com/achun
 	ret.Flags = log.LstdFlags
 	ret.loggers = make([]*log.Logger, NR_LOGLEVELS)
 	if writer == nil {
