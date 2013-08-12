@@ -22,6 +22,16 @@ import (
 	"log"
 )
 
+// one copy form log
+const (
+	Ldate = 1 << iota
+	Ltime
+	Lmicroseconds
+	Llongfile
+	Lshortfile
+	LstdFlags = Ldate | Ltime
+)
+
 const (
 	LOGLEVEL_SILENT = -1
 	LOGLEVEL_FATAL  = iota
@@ -55,6 +65,7 @@ type Logger interface {
 	Alertf(format string, v ...interface{})
 	Fatal(v ...interface{})
 	Fatalf(format string, v ...interface{})
+	SetFlags(flags int)
 }
 
 type logger struct {
@@ -62,8 +73,7 @@ type logger struct {
 	loggers  []*log.Logger
 	prefix   string
 	writer   io.Writer
-	// append Flags field for setting log flag. by https://github.com/achun
-	Flags int
+	flags    int
 }
 
 func (l *logger) Debug(v ...interface{}) {
@@ -122,8 +132,10 @@ func (l *logger) Fatalf(format string, v ...interface{}) {
 	l.loggers[LOGLEVEL_FATAL].Fatalf(format, v...)
 }
 
-// change logLevelToName to LogLevelToName by https://github.com/achun
-// for setting name of log level
+func (l *logger) SetFlags(flags int) {
+	l.flags = flags
+}
+
 var LogLevelToName map[int]string
 
 func init() {
@@ -137,10 +149,15 @@ func init() {
 	LogLevelToName[LOGLEVEL_FATAL] = "[Fatal]"
 }
 
-func NewLogger(writer io.Writer, prefix string, logLevel int) Logger {
+func NewLogger(writer io.Writer, prefix string, logLevel int, flags ...int) Logger {
 	ret := new(logger)
-	// defaults to log.LstdFlags. by https://github.com/achun
-	ret.Flags = log.LstdFlags
+	// defaults to LstdFlags.
+	for _, flag := range flags {
+		ret.flags = ret.flags | flag
+	}
+	if ret.flags == 0 {
+		ret.flags = LstdFlags
+	}
 	ret.loggers = make([]*log.Logger, NR_LOGLEVELS)
 	if writer == nil {
 		ret.writer = &nullWriter{}
@@ -158,10 +175,10 @@ func (l *logger) SetLogLevel(logLevel int) {
 	}
 	l.logLevel = logLevel
 	for i := 0; i <= logLevel; i++ {
-		l.loggers[i] = log.New(l.writer, l.prefix+LogLevelToName[i]+" ", l.Flags)
+		l.loggers[i] = log.New(l.writer, l.prefix+LogLevelToName[i]+" ", l.flags)
 	}
 	nullwriter := &nullWriter{}
 	for i := logLevel + 1; i < NR_LOGLEVELS; i++ {
-		l.loggers[i] = log.New(nullwriter, l.prefix+LogLevelToName[i]+" ", l.Flags)
+		l.loggers[i] = log.New(nullwriter, l.prefix+LogLevelToName[i]+" ", l.flags)
 	}
 }

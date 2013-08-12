@@ -137,4 +137,10 @@ func (self *multiLogger) Fatalf(format string, v ...interface{}) {
 	}
 }
 
-
+func (self *multiLogger) SetFlags(flags int) {
+	for _, l := range self.loggers {
+		if l != nil {
+			l.SetFlags(flags)
+		}
+	}
+}
