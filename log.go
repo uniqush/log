@@ -33,6 +33,7 @@ const (
 )
 
 const (
+	LOGLEVEL_EQUAL  = -2
 	LOGLEVEL_SILENT = -1
 	LOGLEVEL_FATAL  = iota
 	LOGLEVEL_ALERT
@@ -151,8 +152,13 @@ func init() {
 
 func NewLogger(writer io.Writer, prefix string, logLevel int, flags ...int) Logger {
 	ret := new(logger)
+	equal := false
 	// defaults to LstdFlags.
 	for _, flag := range flags {
+		if flag == LOGLEVEL_EQUAL {
+			equal = true
+			continue
+		}
 		ret.flags = ret.flags | flag
 	}
 	if ret.flags == 0 {
@@ -165,15 +171,26 @@ func NewLogger(writer io.Writer, prefix string, logLevel int, flags ...int) Logg
 		ret.writer = writer
 	}
 	ret.prefix = prefix
-	ret.SetLogLevel(logLevel)
+	ret.SetLogLevel(logLevel, equal)
 	return ret
 }
 
-func (l *logger) SetLogLevel(logLevel int) {
+func (l *logger) SetLogLevel(logLevel int, equal bool) {
 	if logLevel > LOGLEVEL_DEBUG {
 		logLevel = LOGLEVEL_DEBUG
 	}
 	l.logLevel = logLevel
+	if equal {
+		nullwriter := &nullWriter{}
+		for i := 0; i < NR_LOGLEVELS; i++ {
+			if logLevel == i {
+				l.loggers[i] = log.New(l.writer, l.prefix+LogLevelToName[i]+" ", l.flags)
+			} else {
+				l.loggers[i] = log.New(nullwriter, l.prefix+LogLevelToName[i]+" ", l.flags)
+			}
+		}
+		return
+	}
 	for i := 0; i <= logLevel; i++ {
 		l.loggers[i] = log.New(l.writer, l.prefix+LogLevelToName[i]+" ", l.flags)
 	}
