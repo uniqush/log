@@ -22,8 +22,22 @@ import (
 	"log"
 )
 
+// one copy form log
 const (
+	Ldate = 1 << iota
+	Ltime
+	Lmicroseconds
+	Llongfile
+	Lshortfile
+	LstdFlags = Ldate | Ltime
+)
+
+const (
+	LOGLEVEL_EQUAL  = -2
 	LOGLEVEL_SILENT = -1
+)
+
+const (
 	LOGLEVEL_FATAL = iota
 	LOGLEVEL_ALERT
 	LOGLEVEL_ERROR
@@ -55,6 +69,7 @@ type Logger interface {
 	Alertf(format string, v ...interface{})
 	Fatal(v ...interface{})
 	Fatalf(format string, v ...interface{})
+	SetFlags(flags int)
 }
 
 type logger struct {
@@ -62,6 +77,7 @@ type logger struct {
 	loggers  []*log.Logger
 	prefix   string
 	writer   io.Writer
+	flags    int
 }
 
 func (l *logger) Debug(v ...interface{}) {
@@ -120,21 +136,37 @@ func (l *logger) Fatalf(format string, v ...interface{}) {
 	l.loggers[LOGLEVEL_FATAL].Fatalf(format, v...)
 }
 
-var logLevelToName map[int]string
-
-func init() {
-	logLevelToName = make(map[int]string, NR_LOGLEVELS)
-	logLevelToName[LOGLEVEL_DEBUG] = "[Debug]"
-	logLevelToName[LOGLEVEL_INFO] = "[Info]"
-	logLevelToName[LOGLEVEL_CONFIG] = "[Config]"
-	logLevelToName[LOGLEVEL_WARN] = "[Warning]"
-	logLevelToName[LOGLEVEL_ERROR] = "[Error]"
-	logLevelToName[LOGLEVEL_ALERT] = "[Alert]"
-	logLevelToName[LOGLEVEL_FATAL] = "[Fatal]"
+func (l *logger) SetFlags(flags int) {
+	l.flags = flags
 }
 
-func NewLogger(writer io.Writer, prefix string, logLevel int) Logger {
+var LogLevelToName map[int]string
+
+func init() {
+	LogLevelToName = make(map[int]string, NR_LOGLEVELS)
+	LogLevelToName[LOGLEVEL_DEBUG] = "[Debug]"
+	LogLevelToName[LOGLEVEL_INFO] = "[Info]"
+	LogLevelToName[LOGLEVEL_CONFIG] = "[Config]"
+	LogLevelToName[LOGLEVEL_WARN] = "[Warning]"
+	LogLevelToName[LOGLEVEL_ERROR] = "[Error]"
+	LogLevelToName[LOGLEVEL_ALERT] = "[Alert]"
+	LogLevelToName[LOGLEVEL_FATAL] = "[Fatal]"
+}
+
+func NewLogger(writer io.Writer, prefix string, logLevel int, flags ...int) Logger {
 	ret := new(logger)
+	equal := false
+	// defaults to LstdFlags.
+	for _, flag := range flags {
+		if flag == LOGLEVEL_EQUAL {
+			equal = true
+			continue
+		}
+		ret.flags = ret.flags | flag
+	}
+	if ret.flags == 0 {
+		ret.flags = LstdFlags
+	}
 	ret.loggers = make([]*log.Logger, NR_LOGLEVELS)
 	if writer == nil {
 		ret.writer = &nullWriter{}
@@ -142,21 +174,31 @@ func NewLogger(writer io.Writer, prefix string, logLevel int) Logger {
 		ret.writer = writer
 	}
 	ret.prefix = prefix
-	ret.SetLogLevel(logLevel)
+	ret.SetLogLevel(logLevel, equal)
 	return ret
 }
 
-func (l *logger) SetLogLevel(logLevel int) {
+func (l *logger) SetLogLevel(logLevel int, equal bool) {
 	if logLevel > LOGLEVEL_DEBUG {
 		logLevel = LOGLEVEL_DEBUG
 	}
 	l.logLevel = logLevel
+	if equal {
+		nullwriter := &nullWriter{}
+		for i := 0; i < NR_LOGLEVELS; i++ {
+			if logLevel == i {
+				l.loggers[i] = log.New(l.writer, l.prefix+LogLevelToName[i]+" ", l.flags)
+			} else {
+				l.loggers[i] = log.New(nullwriter, l.prefix+LogLevelToName[i]+" ", l.flags)
+			}
+		}
+		return
+	}
 	for i := 0; i <= logLevel; i++ {
-		l.loggers[i] = log.New(l.writer, l.prefix+logLevelToName[i]+" ", log.LstdFlags)
+		l.loggers[i] = log.New(l.writer, l.prefix+LogLevelToName[i]+" ", l.flags)
 	}
 	nullwriter := &nullWriter{}
 	for i := logLevel + 1; i < NR_LOGLEVELS; i++ {
-		l.loggers[i] = log.New(nullwriter, l.prefix+logLevelToName[i]+" ", log.LstdFlags)
+		l.loggers[i] = log.New(nullwriter, l.prefix+LogLevelToName[i]+" ", l.flags)
 	}
 }
-
