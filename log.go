@@ -22,7 +22,7 @@ import (
 	"log"
 )
 
-// copy form log
+// one copy form log
 const (
 	Ldate = 1 << iota
 	Ltime
