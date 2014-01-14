@@ -33,6 +33,7 @@ const (
 )
 
 const (
+	_                = 0 // skip zero for clear flag argument of log.New
 	LOGLEVEL_FATAL   = -iota
 	LOGLEVEL_RECOVER // for recover panic
 	LOGLEVEL_ALERT
@@ -218,6 +219,7 @@ func init() {
 
 func NewLogger(writer io.Writer, prefix string, flags ...int) Logger {
 	ret := new(logger)
+	hasflags := false
 	for _, flag := range flags {
 		if flag == EQUAL_LEVEL {
 			ret.equal = true
@@ -232,13 +234,14 @@ func NewLogger(writer io.Writer, prefix string, flags ...int) Logger {
 			continue
 		}
 		if flag >= 0 {
+			hasflags = true
 			ret.flags = ret.flags | flag
 		} else {
 			ret.level = -flag
 		}
 	}
 	// defaults to LstdFlags.
-	if len(flags) == 0 {
+	if !hasflags {
 		ret.flags = LstdFlags
 	}
 
