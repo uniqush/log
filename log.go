@@ -33,7 +33,7 @@ const (
 )
 
 const (
-	_                = 0 // skip zero for clear flag argument of log.New
+	Lempty           = 0 // empty text to prefix for flag argument of log.New
 	LOGLEVEL_FATAL   = -iota
 	LOGLEVEL_RECOVER // for recover panic
 	LOGLEVEL_ALERT
@@ -87,7 +87,7 @@ type logger struct {
 
 func (l *logger) ok(level int) bool {
 	level = -level
-	if l.equal && level == l.level || level <= l.level {
+	if l.equal && level == l.level || level <= l.level && !l.equal {
 		if !l.noneLevelName {
 			l.writer.Write([]byte(logLevelToName[level]))
 		}
@@ -219,6 +219,7 @@ func init() {
 
 func NewLogger(writer io.Writer, prefix string, flags ...int) Logger {
 	ret := new(logger)
+	ret.level = -NR_LOGLEVELS - 1
 	hasflags := false
 	for _, flag := range flags {
 		if flag == EQUAL_LEVEL {
