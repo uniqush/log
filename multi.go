@@ -17,12 +17,29 @@
 
 package log
 
+import (
+	"io"
+)
+
 type multiLogger struct {
 	loggers []Logger
 }
 
 func MultiLogger(loggers ...Logger) Logger {
 	return &multiLogger{loggers}
+}
+func (self *multiLogger) Write(p []byte) (n int, err error) {
+	for _, l := range self.loggers {
+		n, err = l.Write(p)
+		if err != nil {
+			return
+		}
+		if n != len(p) {
+			err = io.ErrShortWrite
+			return
+		}
+	}
+	return
 }
 
 func (self *multiLogger) Debug(v ...interface{}) {
@@ -137,4 +154,18 @@ func (self *multiLogger) Fatalf(format string, v ...interface{}) {
 	}
 }
 
+func (self *multiLogger) Recover(v ...interface{}) {
+	for _, l := range self.loggers {
+		if l != nil {
+			l.Recover(v...)
+		}
+	}
+}
 
+func (self *multiLogger) Recoverf(format string, v ...interface{}) {
+	for _, l := range self.loggers {
+		if l != nil {
+			l.Recoverf(format, v...)
+		}
+	}
+}
