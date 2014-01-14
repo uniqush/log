@@ -196,7 +196,7 @@ func (l *logger) Fatal(v ...interface{}) {
 func (l *logger) Fatalf(format string, v ...interface{}) {
 	if l.ok(LOGLEVEL_FATAL) {
 		if l.dontExit {
-			l.log.Print(v...)
+			l.log.Printf(format, v...)
 		} else {
 			l.log.Fatalf(format, v...)
 		}
