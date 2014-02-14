@@ -137,4 +137,18 @@ func (self *multiLogger) Fatalf(format string, v ...interface{}) {
 	}
 }
 
+func (self *multiLogger) Recover(v ...interface{}) {
+	for _, l := range self.loggers {
+		if l != nil {
+			l.Recover(v...)
+		}
+	}
+}
 
+func (self *multiLogger) Recoverf(format string, v ...interface{}) {
+	for _, l := range self.loggers {
+		if l != nil {
+			l.Recoverf(format, v...)
+		}
+	}
+}

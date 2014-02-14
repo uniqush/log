@@ -22,9 +22,20 @@ import (
 	"log"
 )
 
+// one copy form log
 const (
-	LOGLEVEL_SILENT = -1
-	LOGLEVEL_FATAL = iota
+	Ldate = 1 << iota
+	Ltime
+	Lmicroseconds
+	Llongfile
+	Lshortfile
+	LstdFlags = Ldate | Ltime
+)
+
+const (
+	Lempty           = 0 // empty text to prefix for flag argument of log.New
+	LOGLEVEL_FATAL   = -iota
+	LOGLEVEL_RECOVER // for recover panic
 	LOGLEVEL_ALERT
 	LOGLEVEL_ERROR
 	LOGLEVEL_WARN
@@ -32,6 +43,9 @@ const (
 	LOGLEVEL_INFO
 	LOGLEVEL_DEBUG
 	NR_LOGLEVELS
+	EQUAL_LEVEL     // equal level mode
+	NONE_LEVEL_NAME // dont write default level name
+	DONT_EXIT       // no os.Exit
 )
 
 type nullWriter struct{}
@@ -55,108 +69,188 @@ type Logger interface {
 	Alertf(format string, v ...interface{})
 	Fatal(v ...interface{})
 	Fatalf(format string, v ...interface{})
+	Recover(v ...interface{})
+	Recoverf(format string, v ...interface{})
 }
 
 type logger struct {
-	logLevel int
-	loggers  []*log.Logger
-	prefix   string
-	writer   io.Writer
+	level         int
+	log           *log.Logger
+	writer        io.Writer
+	prefix        string
+	flags         int
+	equal         bool
+	noneLevelName bool
+	dontExit      bool
+}
+
+func (l *logger) ok(level int) bool {
+	level = -level
+	if l.equal && level == l.level || level <= l.level && !l.equal {
+		if !l.noneLevelName {
+			l.writer.Write([]byte(logLevelToName[level]))
+		}
+		return true
+	}
+	return false
 }
 
 func (l *logger) Debug(v ...interface{}) {
-	l.loggers[LOGLEVEL_DEBUG].Print(v...)
+	if l.ok(LOGLEVEL_DEBUG) {
+		l.log.Print(v...)
+	}
 }
 
 func (l *logger) Debugf(format string, v ...interface{}) {
-	l.loggers[LOGLEVEL_DEBUG].Printf(format, v...)
+	if l.ok(LOGLEVEL_DEBUG) {
+		l.log.Printf(format, v...)
+	}
 }
 
 func (l *logger) Info(v ...interface{}) {
-	l.loggers[LOGLEVEL_INFO].Print(v...)
+	if l.ok(LOGLEVEL_INFO) {
+		l.log.Print(v...)
+	}
 }
 
 func (l *logger) Infof(format string, v ...interface{}) {
-	l.loggers[LOGLEVEL_INFO].Printf(format, v...)
+	if l.ok(LOGLEVEL_INFO) {
+		l.log.Printf(format, v...)
+	}
 }
 
 func (l *logger) Config(v ...interface{}) {
-	l.loggers[LOGLEVEL_CONFIG].Print(v...)
+	if l.ok(LOGLEVEL_CONFIG) {
+		l.log.Print(v...)
+	}
 }
 
 func (l *logger) Configf(format string, v ...interface{}) {
-	l.loggers[LOGLEVEL_CONFIG].Printf(format, v...)
+	if l.ok(LOGLEVEL_CONFIG) {
+		l.log.Printf(format, v...)
+	}
 }
 
 func (l *logger) Warn(v ...interface{}) {
-	l.loggers[LOGLEVEL_WARN].Print(v...)
+	if l.ok(LOGLEVEL_WARN) {
+		l.log.Print(v...)
+	}
 }
 
 func (l *logger) Warnf(format string, v ...interface{}) {
-	l.loggers[LOGLEVEL_WARN].Printf(format, v...)
+	if l.ok(LOGLEVEL_WARN) {
+		l.log.Printf(format, v...)
+	}
 }
 
 func (l *logger) Error(v ...interface{}) {
-	l.loggers[LOGLEVEL_ERROR].Print(v...)
+	if l.ok(LOGLEVEL_ERROR) {
+		l.log.Print(v...)
+	}
 }
 
 func (l *logger) Errorf(format string, v ...interface{}) {
-	l.loggers[LOGLEVEL_ERROR].Printf(format, v...)
+	if l.ok(LOGLEVEL_ERROR) {
+		l.log.Printf(format, v...)
+	}
 }
 
 func (l *logger) Alert(v ...interface{}) {
-	l.loggers[LOGLEVEL_ALERT].Print(v...)
+	if l.ok(LOGLEVEL_ALERT) {
+		l.log.Print(v...)
+	}
 }
 
 func (l *logger) Alertf(format string, v ...interface{}) {
-	l.loggers[LOGLEVEL_ALERT].Printf(format, v...)
+	if l.ok(LOGLEVEL_ALERT) {
+		l.log.Printf(format, v...)
+	}
+}
+
+func (l *logger) Recover(v ...interface{}) {
+	if l.ok(LOGLEVEL_RECOVER) {
+		l.log.Print(v...)
+	}
+}
+
+func (l *logger) Recoverf(format string, v ...interface{}) {
+	if l.ok(LOGLEVEL_RECOVER) {
+		l.log.Printf(format, v...)
+	}
 }
 
 func (l *logger) Fatal(v ...interface{}) {
-	l.loggers[LOGLEVEL_FATAL].Fatal(v...)
+	if l.ok(LOGLEVEL_FATAL) {
+		if l.dontExit {
+			l.log.Print(v...)
+		} else {
+			l.log.Fatal(v...)
+		}
+	}
 }
 
 func (l *logger) Fatalf(format string, v ...interface{}) {
-	l.loggers[LOGLEVEL_FATAL].Fatalf(format, v...)
+	if l.ok(LOGLEVEL_FATAL) {
+		if l.dontExit {
+			l.log.Printf(format, v...)
+		} else {
+			l.log.Fatalf(format, v...)
+		}
+	}
 }
 
-var logLevelToName map[int]string
+var logLevelToName [-NR_LOGLEVELS]string
 
 func init() {
-	logLevelToName = make(map[int]string, NR_LOGLEVELS)
-	logLevelToName[LOGLEVEL_DEBUG] = "[Debug]"
-	logLevelToName[LOGLEVEL_INFO] = "[Info]"
-	logLevelToName[LOGLEVEL_CONFIG] = "[Config]"
-	logLevelToName[LOGLEVEL_WARN] = "[Warning]"
-	logLevelToName[LOGLEVEL_ERROR] = "[Error]"
-	logLevelToName[LOGLEVEL_ALERT] = "[Alert]"
-	logLevelToName[LOGLEVEL_FATAL] = "[Fatal]"
+	logLevelToName[-LOGLEVEL_DEBUG] = "[Debug]"
+	logLevelToName[-LOGLEVEL_INFO] = "[Info]"
+	logLevelToName[-LOGLEVEL_CONFIG] = "[Config]"
+	logLevelToName[-LOGLEVEL_WARN] = "[Warning]"
+	logLevelToName[-LOGLEVEL_ERROR] = "[Error]"
+	logLevelToName[-LOGLEVEL_ALERT] = "[Alert]"
+	logLevelToName[-LOGLEVEL_FATAL] = "[Fatal]"
+	logLevelToName[-LOGLEVEL_RECOVER] = "[Recover]"
 }
 
-func NewLogger(writer io.Writer, prefix string, logLevel int) Logger {
+func NewLogger(writer io.Writer, prefix string, flags ...int) Logger {
 	ret := new(logger)
-	ret.loggers = make([]*log.Logger, NR_LOGLEVELS)
+	ret.level = -NR_LOGLEVELS - 1
+	hasflags := false
+	for _, flag := range flags {
+		if flag == EQUAL_LEVEL {
+			ret.equal = true
+			continue
+		}
+		if flag == NONE_LEVEL_NAME {
+			ret.noneLevelName = true
+			continue
+		}
+		if flag == DONT_EXIT {
+			ret.dontExit = true
+			continue
+		}
+		if flag >= 0 {
+			hasflags = true
+			ret.flags = ret.flags | flag
+		} else {
+			ret.level = -flag
+		}
+	}
+	// defaults to LstdFlags.
+	if !hasflags {
+		ret.flags = LstdFlags
+	}
+
+	if ret.level >= -NR_LOGLEVELS {
+		ret.level = -NR_LOGLEVELS - 1
+	}
+
+	ret.prefix = prefix
 	if writer == nil {
 		ret.writer = &nullWriter{}
 	} else {
 		ret.writer = writer
 	}
-	ret.prefix = prefix
-	ret.SetLogLevel(logLevel)
+	ret.log = log.New(writer, prefix+" ", ret.flags)
 	return ret
 }
-
-func (l *logger) SetLogLevel(logLevel int) {
-	if logLevel > LOGLEVEL_DEBUG {
-		logLevel = LOGLEVEL_DEBUG
-	}
-	l.logLevel = logLevel
-	for i := 0; i <= logLevel; i++ {
-		l.loggers[i] = log.New(l.writer, l.prefix+logLevelToName[i]+" ", log.LstdFlags)
-	}
-	nullwriter := &nullWriter{}
-	for i := logLevel + 1; i < NR_LOGLEVELS; i++ {
-		l.loggers[i] = log.New(nullwriter, l.prefix+logLevelToName[i]+" ", log.LstdFlags)
-	}
-}
-
