@@ -69,7 +69,6 @@ type Logger interface {
 	Alertf(format string, v ...interface{})
 	Fatal(v ...interface{})
 	Fatalf(format string, v ...interface{})
-	Write([]byte) (int, error)
 	Recover(v ...interface{})
 	Recoverf(format string, v ...interface{})
 }
@@ -94,10 +93,6 @@ func (l *logger) ok(level int) bool {
 		return true
 	}
 	return false
-}
-
-func (l *logger) Write(p []byte) (int, error) {
-	return l.writer.Write(p)
 }
 
 func (l *logger) Debug(v ...interface{}) {
