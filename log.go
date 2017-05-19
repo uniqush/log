@@ -24,7 +24,7 @@ import (
 
 const (
 	LOGLEVEL_SILENT = -1
-	LOGLEVEL_FATAL = iota
+	LOGLEVEL_FATAL  = iota
 	LOGLEVEL_ALERT
 	LOGLEVEL_ERROR
 	LOGLEVEL_WARN
@@ -33,6 +33,41 @@ const (
 	LOGLEVEL_DEBUG
 	NR_LOGLEVELS
 )
+
+// goLogger is an interface, implemented by golang's standard log interface.
+type goLogger interface {
+	Print(v ...interface{})
+	Printf(format string, v ...interface{})
+	Fatal(v ...interface{})
+	Fatalf(format string, v ...interface{})
+}
+
+// There are two implementations of goLogger.
+var _ goLogger = &log.Logger{}
+var _ goLogger = &nullLoggerWrapper{}
+
+// nullLoggerWrapper avoids calling Sprintf to make statements with disabled logging levels more efficient.
+type nullLoggerWrapper struct {
+	inner *log.Logger
+}
+
+func (l *nullLoggerWrapper) Print(v ...interface{}) {
+}
+func (l *nullLoggerWrapper) Printf(format string, v ...interface{}) {
+}
+func (l *nullLoggerWrapper) Fatal(v ...interface{}) {
+	l.inner.Fatal(v)
+}
+func (l *nullLoggerWrapper) Fatalf(format string, v ...interface{}) {
+	l.inner.Fatalf(format, v)
+}
+
+// newNullLoggerWrapper creates something which does nothing and logs nothing, except in the case of fatal errors
+func newNullLoggerWrapper(writer io.Writer, prefix string, flag int) *nullLoggerWrapper {
+	return &nullLoggerWrapper{
+		inner: log.New(writer, prefix, flag),
+	}
+}
 
 type nullWriter struct{}
 
@@ -59,7 +94,7 @@ type Logger interface {
 
 type logger struct {
 	logLevel int
-	loggers  []*log.Logger
+	loggers  []goLogger
 	prefix   string
 	writer   io.Writer
 }
@@ -135,7 +170,7 @@ func init() {
 
 func NewLogger(writer io.Writer, prefix string, logLevel int) Logger {
 	ret := new(logger)
-	ret.loggers = make([]*log.Logger, NR_LOGLEVELS)
+	ret.loggers = make([]goLogger, NR_LOGLEVELS)
 	if writer == nil {
 		ret.writer = &nullWriter{}
 	} else {
@@ -154,9 +189,7 @@ func (l *logger) SetLogLevel(logLevel int) {
 	for i := 0; i <= logLevel; i++ {
 		l.loggers[i] = log.New(l.writer, l.prefix+logLevelToName[i]+" ", log.LstdFlags)
 	}
-	nullwriter := &nullWriter{}
 	for i := logLevel + 1; i < NR_LOGLEVELS; i++ {
-		l.loggers[i] = log.New(nullwriter, l.prefix+logLevelToName[i]+" ", log.LstdFlags)
+		l.loggers[i] = newNullLoggerWrapper(l.writer, l.prefix+logLevelToName[i]+" ", log.LstdFlags)
 	}
 }
-
