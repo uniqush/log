@@ -136,5 +136,3 @@ func (self *multiLogger) Fatalf(format string, v ...interface{}) {
 		}
 	}
 }
-
-
